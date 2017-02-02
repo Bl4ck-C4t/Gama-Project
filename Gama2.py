@@ -4,10 +4,12 @@ import re
 import threading
 import sys
 import copy
+import hashlib
 
-# TODO part - 6
-# TODO continue part 5
+# TODO part - 7
+# TODO continue part 7's reply
 # TODO make hashdump
+# TODO complete msf
 
 
 
@@ -413,6 +415,66 @@ def LAN(ls):
 def hashdump(lhost, rhost):
     pass
 
+def msf(self):
+    if isinstance(self, list):
+        host = self[0]
+        target = self[1]
+        print("Msf console running from {} and is connected to {}".format(host.ip, target.ip))
+    print("""
+         __    ___     ___                      _
+  /\/\  / _\  / __\   / __\___  _ __  ___  ___ | | ___
+ /    \ \ \  / _\    / /  / _ \| '_ \/ __|/ _ \| |/ _ \
+/ /\/\ \_\ \/ /     / /__| (_) | | | \__ \ (_) | |  __/
+\/    \/\__/\/      \____/\___/|_| |_|___/\___/|_|\___|
+
+    """)
+    bash = "msf> "
+    desc = {"net_api": "Direct access", "psh": "Uses a computer's hash and passes it to rhost in the LAN to get access"}
+    db = {"net_api": {"LHOST": "127.0.0.1", "RHOST": ""}, "psh": {"LHOST": "127.0.0.1", "RHOST": "", "USER": "",
+                                                                  "PASS": ""}}
+    exploit = None
+    name = None
+    while True:
+        print("""
+        'e' - to exit
+        'db' - to see exploits database
+        'use [exploit_name]' - to set exploit
+        'set [PARAMETER] [VALUE]' - to set exploit's parameter
+        'show options' - to see current exploit parameters
+        'exploit' - to run exploit
+        """)
+        cmd = input(bash)
+        cmd = cmd.split(" ")
+        cm = cmd[0]
+        if cm == "e":
+            return
+        elif cm == "db":
+            for x, y in db.items():
+                print(x + " - " + desc[x])
+        elif cm == "use":
+            expl = cmd[1]
+            if expl in db.keys():
+                bash = "msf({})>".format(expl)
+                name = expl
+                exploit = copy.deepcopy(db[expl])
+            else:
+                print("No such exploit.")
+        elif cm == "set":
+            param = cmd[1]
+            value = cmd[2]
+            exploit[param] = value
+            print("{} set to {}".format(param, value))
+        elif cm == "show options":
+            print("Options of " + name)
+            for x, y in exploit.keys():
+                print("{}: {}".format(x, y))
+        elif cm == "exploit":
+            if name == "psh":
+                pass
+
+
+
+
 class Dirs:
 
     def __init__(self, name, path):
@@ -478,12 +540,18 @@ class Port:
 
 
 class LAN_con:
-    def __init__(self, host, tp="unlocked", user=None, password=None):
+    def __init__(self, host,  tp="unlocked", hashes=None, user=None, password=None):
+        if hashes is None:
+            hashes = []
         self.type = tp
         self.user = user
         self.password = password
         self.host = host
         self.name = host.name
+        self.hash = credits(6, 4)
+        self.hash = [hash(x) for x in self.hash]
+        self.hashes = []
+
 
 class Instance:
     i = 0
@@ -491,7 +559,6 @@ class Instance:
 
 class PC:
     all_pc = []
-
 
     def __init__(self, name, ip, me, space=1000, hard=[], mails=[]):
         self.ip = ip
@@ -559,6 +626,14 @@ class PC:
             self.story += 1
             add_email(contact, "Well done", [box("All right. Now just decrypt the file and follow the trail : )")])
             print("New message.")
+
+        elif part == 7 and mess == "p7":
+            self.story += 1
+            add_email(contact, "Exploits", [box("Amazing, you retrieved the metasploit console! Now you can hack"
+                                                " others by exploiting their system and not just by bruteforcing"
+                                                " passwords.")])
+            print("New message.")
+
 
     def execute(self, command):
         command = command.split(" ")
@@ -669,7 +744,9 @@ class PC:
                             if self.story == 4:
                                 self.reply(self.mails[0], "p4")
             elif page == "www.metasploit.com":
-                pass  # download msf.exe
+                self.download([File.fls["msf"]], self)
+                if self.story == "7":
+                    self.reply(self.mails[0], "p7")  # progress next part
             else:
                 print("Unresolved web address. :/")
 
@@ -813,6 +890,7 @@ File.fls["Ncrack"] = File("Ncrack", 50, "exe", Ncrack)
 File.fls["Webc"] = File("Webcrawler", 60, "exe", Webcrawler)
 File.fls["Decryptor"] = File("Decryptor", 60, "exe", Decryptor)
 File.fls["LAN"] = File("LAN_connect", 30, "exe", LAN)
+File.fls["msf"] = File("msf", 80, "exe", msf)
 File.fls["ObjtxtFile1"] = File("data", 20, "txt", t2a("Some data"), True)
 File.fls["Dictionary"] = File("dict", 30, "txt", "pass1, pass2, pass3")
 File.fls["Link_to_msf"] = File("link", 30, "txt", t2a("The file is at: www.metasploit.com"), True)
@@ -828,7 +906,7 @@ obj3.ports.append(Port(25, 1))
 obj3.lan_conn = LAN_con(obj3)
 obj4 = PC("Retr0", ipgen(), False, 2000)  # middle
 obj4.lan_conn = LAN_con(obj4)
-obj5 = PC("Mainframe", ipgen(), False, 2000, [File.fls["Link_to_msf"]])  # has msfconsole 'end'
+obj5 = PC("Mainframe", ipgen(), False, 2000, [File.fls["Link_to_msf"]])  # has msf link 'end'
 obj5.ports.append(Port(40, 3, "closed"))
 obj5.lan_conn = LAN_con(obj5)
 obj3.LAN = [obj4.lan_conn]
